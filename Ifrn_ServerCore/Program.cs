@@ -9,34 +9,33 @@ namespace Ifrn_ServerCore
 {
     internal class Program
     {
-        static bool _stop = false;           // 전역 : 모든 쓰레드가 접근 가능
-
-        static void ThreadMain()
-        {
-            Console.WriteLine("쓰레드 시작!");
-
-            while(_stop == false) { 
-                // 누군가가 stop 신호를 해주기를 기다린다.
-            }
-
-            Console.WriteLine("쓰레드 종료!");
-        }
-
         static void Main(string[] args)
         {
-            Task t = new Task(ThreadMain);
-            t.Start();  
+            int[,] arr = new int[10000, 10000];
+            // 5 * 5 배열
+            // [][][][][] [][][][][] [][][][][] [][][][][] [][][][][]
 
-            Thread.Sleep(1000);                // 1초간 쉬겠다.
+            // 캐시의 공간지역성
+            // - 접근한 변수와 인접한 주소가 접근될 확률이 높다.
+            // (x, y)는 캐시미스가 너무 많이 난다 -> 공간지역성이 떨어짐
 
-            _stop = true;
+            {
+                long now = DateTime.Now.Ticks;
+                for (int y = 0; y < 10000; y++)
+                    for (int x = 0; x < 10000; x++)
+                        arr[y, x] = 1;
+                long end = DateTime.Now.Ticks;
+                Console.WriteLine($"(y, x) 순서 걸린 시간 : {end - now}");
+            }
 
-            Console.WriteLine("Stop 호출");
-            Console.WriteLine("종료 대기중");
-
-            t.Wait();                           // join의 Task 버전
-
-            Console.WriteLine("종료 성공");
+            {
+                long now = DateTime.Now.Ticks;
+                for (int y = 0; y < 10000; y++)
+                    for (int x = 0; x < 10000; x++)
+                        arr[x, y] = 1;
+                long end = DateTime.Now.Ticks;
+                Console.WriteLine($"(x, y) 순서 걸린 시간 : {end - now}");
+            }
         }
     }
 }
