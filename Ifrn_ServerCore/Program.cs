@@ -9,43 +9,35 @@ namespace Ifrn_ServerCore
 {
     internal class Program
     {
-        static int x = 0;
-        static int y = 0;
-        static int r1 = 0;
-        static int r2 = 0; 
+        int _answer;
+        bool _complete;
 
-        static void Thread_1()
+        void A()
         {
-            y = 1;           // Store y
-            Thread.MemoryBarrier();                 // 위 아래 라인의 순서를 뒤바꿀 수 없게 해준다.
-            r1 = x;          // Load X
+            _answer = 123;
+            Thread.MemoryBarrier();         // Barrier 1
+            _complete = true;
+            Thread.MemoryBarrier();         // Barrier 2
         }
 
-        static void Thread_2() 
+        // store을 연속 두 번 했으니까 각 Memory Barrier가 두 store의 가시성을 보여준다.
+
+
+        void B()
         {
-            x = 1;          // Store X
-            Thread.MemoryBarrier();
-            r2 = y;         // Load y
+            Thread.MemoryBarrier();         // Barrier 3
+            if (_complete)
+            {
+                Thread.MemoryBarrier();     // Barrier 4
+                Console.WriteLine(_answer);
+            }
         }
+
+        // Read하기 전에 Barrier 3을 해서 가시성을 높여준다.
+
         static void Main(string[] args)
         {
-            int count = 0;
-            while(true)
-            {
-                count++;
-                x = y = r1 = r2 = 0;
 
-                Task t1 = new Task(Thread_1);
-                Task t2 = new Task(Thread_2);  
-                t1.Start();
-                t2.Start();
-
-                Task.WaitAll(t1, t2);
-
-                if (r1 == 0 && r2 == 0)
-                    break;
-            }
-            Console.WriteLine($"{count}번만에 빠져나옴!");
         }
     }
 }
@@ -57,7 +49,11 @@ namespace Ifrn_ServerCore
 // HW가 지멋대로 최적화해버린다..
 
 // 메모리 베리어의 기능
-// 1) 코드 재배치 억제
-// -  
-// 
-// 2) 가시성
+// - 1) 코드 재배치 억제
+// - 2) 가시성
+
+// 메모리 베리어의 종류
+// - 1) Full Memory Barrier (ASM MFENCE, C# Thread.MemoryBarrier) : Store/Load 둘 다 막는다
+// - 2) Store Memory Barrier (ASM SFENCE) : Store만 막는다
+// - 3) Load Memory Barrier (ASM LFENCE) : Load만 막는다
+
