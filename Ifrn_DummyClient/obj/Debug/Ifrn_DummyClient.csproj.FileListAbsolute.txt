@@ -1,0 +1,8 @@
+D:\source\Ifrn_Server\Ifrn_DummyClient\bin\Debug\Ifrn_DummyClient.exe.config
+D:\source\Ifrn_Server\Ifrn_DummyClient\bin\Debug\Ifrn_DummyClient.exe
+D:\source\Ifrn_Server\Ifrn_DummyClient\bin\Debug\Ifrn_DummyClient.pdb
+D:\source\Ifrn_Server\Ifrn_DummyClient\obj\Debug\Ifrn_DummyClient.csproj.AssemblyReference.cache
+D:\source\Ifrn_Server\Ifrn_DummyClient\obj\Debug\Ifrn_DummyClient.csproj.SuggestedBindingRedirects.cache
+D:\source\Ifrn_Server\Ifrn_DummyClient\obj\Debug\Ifrn_DummyClient.csproj.CoreCompileInputs.cache
+D:\source\Ifrn_Server\Ifrn_DummyClient\obj\Debug\Ifrn_DummyClient.exe
+D:\source\Ifrn_Server\Ifrn_DummyClient\obj\Debug\Ifrn_DummyClient.pdb

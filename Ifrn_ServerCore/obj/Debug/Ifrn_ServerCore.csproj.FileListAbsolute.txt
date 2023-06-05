@@ -1,0 +1,8 @@
+D:\source\Ifrn_Server\Ifrn_ServerCore\bin\Debug\Ifrn_ServerCore.exe.config
+D:\source\Ifrn_Server\Ifrn_ServerCore\bin\Debug\Ifrn_ServerCore.exe
+D:\source\Ifrn_Server\Ifrn_ServerCore\bin\Debug\Ifrn_ServerCore.pdb
+D:\source\Ifrn_Server\Ifrn_ServerCore\obj\Debug\Ifrn_ServerCore.csproj.AssemblyReference.cache
+D:\source\Ifrn_Server\Ifrn_ServerCore\obj\Debug\Ifrn_ServerCore.csproj.SuggestedBindingRedirects.cache
+D:\source\Ifrn_Server\Ifrn_ServerCore\obj\Debug\Ifrn_ServerCore.csproj.CoreCompileInputs.cache
+D:\source\Ifrn_Server\Ifrn_ServerCore\obj\Debug\Ifrn_ServerCore.exe
+D:\source\Ifrn_Server\Ifrn_ServerCore\obj\Debug\Ifrn_ServerCore.pdb
