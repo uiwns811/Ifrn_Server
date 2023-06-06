@@ -8,6 +8,49 @@ using System.Threading.Tasks;
 
 namespace Ifrn_ServerCore
 {
+    // 서로 lock이 뒤엉켜 deadlock이 발생하는 상황
+    class SessionManager
+    {
+        static object _lock = new object();
+        
+        public static void TestSession()
+        {
+            lock(_lock)
+            {
+
+            }
+        }
+
+        public static void Test()
+        {
+            lock(_lock)
+            {
+                UserManager.TestUser();
+            }
+        }
+    }
+
+    class UserManager
+    {
+        static object _lock = new object();
+
+        public static void Test()
+        {
+            lock(_lock)
+            {
+                SessionManager.TestSession();
+            }
+        }
+
+        public static void TestUser()
+        {
+            lock(_lock)
+            {
+
+            }
+        }
+    }
+  
     internal class Program
     {
         static volatile int number = 0;
@@ -15,38 +58,16 @@ namespace Ifrn_ServerCore
 
         static void Thread_1()
         {
-            for (int i = 0; i < 100000; i++)
+            for (int i = 0; i < 10000; i++)
             {
-                // 상호 배제 (Mutual Exclusive)
-                // : 나만 사용할거다. 얼씬도 하지 마라.
-
-                lock(_obj)
-                {
-                    number++;
-                }
-
-                // Enter, Exit 짝을 잘 맞춰줘야 한다.
-
-                //try
-                //{
-                //    Monitor.Enter(_obj);
-                //    number++;
-
-                //    return;
-                //}
-                //finally
-                //{
-                //    Monitor.Exit(_obj); 
-                //}
+                SessionManager.Test();
             }
         }
         static void Thread_2()
         {
-            for (int i = 0; i < 100000; i++) 
-            { 
-                Monitor.Enter(_obj);
-                number--;
-                Monitor.Exit(_obj);
+            for (int i = 0; i < 10000; i++) 
+            {
+                UserManager.Test();
             }
         }
         static void Main(string[] args)
