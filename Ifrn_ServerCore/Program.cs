@@ -14,31 +14,14 @@ namespace Ifrn_ServerCore
 
         public void Acquire()
         {
-            while (true)
-            {
-                //int original = Interlocked.Exchange(ref _locked, 1);
-                //if (original == 0)
-                //    break;
+            int expected = 0;
+            int desired = 1;
+            while (Interlocked.CompareExchange(ref _locked, desired, expected) == desired);
 
-                // 원래는 0(false)이었는데 내가 1(true)로 바꿨다
-                // original은 stack의 지역변수니까 read해도 된다.
-                // _lock은 조심해야하고, original은 stack이니까 접근해도 괜찮다.
-
-                // 위 코드는 아래와 같다
-                // int original = _locked;
-                // _locked = 1;
-                // if (original == 0) break;
-
-                // 단, original에 대입하고 lock에 1을 넣는 두 라인 사이가 벌어지면 문제될 수 있으므로
-                // Exchange를 이용해준다 (CAS와 유사한 동작 방식)
-
-                int expected = 0;
-                int desired = 1;
-                if (Interlocked.CompareExchange(ref _locked, desired, expected) == expected)
-                    break;
-                // CAS (Compare And Swap) 연산
-
-            }
+            // 쉬다 올게 ~
+            // Thread.Sleep(1);        // 무조건 휴식 : 1ms만큼 쉴게요
+            // Thread.Sleep(0);        // 조건부 휴식 : 우선순위가 나보다 같거나 높은 쓰레드가 없으면 다시 본인에게
+            Thread.Yield();         // 관대한 양보 : 지금 실행 가능한 쓰레드가 있으면 실행하세요 -> 실행 가능한 애 없으면 다시 본인에게
         }
 
         public void Release() 
