@@ -8,67 +8,68 @@ using System.Threading.Tasks;
 
 namespace Ifrn_ServerCore
 {
-    // 서로 lock이 뒤엉켜 deadlock이 발생하는 상황
-    class SessionManager
+    class SpinLock
     {
-        static object _lock = new object();
-        
-        public static void TestSession()
+        volatile int _locked = 0;
+
+        public void Acquire()
         {
-            lock(_lock)
+            while (true)
             {
+                //int original = Interlocked.Exchange(ref _locked, 1);
+                //if (original == 0)
+                //    break;
+
+                // 원래는 0(false)이었는데 내가 1(true)로 바꿨다
+                // original은 stack의 지역변수니까 read해도 된다.
+                // _lock은 조심해야하고, original은 stack이니까 접근해도 괜찮다.
+
+                // 위 코드는 아래와 같다
+                // int original = _locked;
+                // _locked = 1;
+                // if (original == 0) break;
+
+                // 단, original에 대입하고 lock에 1을 넣는 두 라인 사이가 벌어지면 문제될 수 있으므로
+                // Exchange를 이용해준다 (CAS와 유사한 동작 방식)
+
+                int expected = 0;
+                int desired = 1;
+                if (Interlocked.CompareExchange(ref _locked, desired, expected) == expected)
+                    break;
+                // CAS (Compare And Swap) 연산
 
             }
         }
 
-        public static void Test()
+        public void Release() 
         {
-            lock(_lock)
-            {
-                UserManager.TestUser();
-            }
+            _locked = 0;
         }
     }
-
-    class UserManager
-    {
-        static object _lock = new object();
-
-        public static void Test()
-        {
-            lock(_lock)
-            {
-                SessionManager.TestSession();
-            }
-        }
-
-        public static void TestUser()
-        {
-            lock(_lock)
-            {
-
-            }
-        }
-    }
-  
     internal class Program
     {
-        static volatile int number = 0;
-        static object _obj = new object();
+        static int _num = 0;
+        static SpinLock _lock = new SpinLock();
 
         static void Thread_1()
         {
-            for (int i = 0; i < 10000; i++)
+            for (int i = 0; i < 100000; i++)
             {
-                SessionManager.Test();
+                _lock.Acquire();
+                _num++;
+                _lock.Release();
             }
         }
+
         static void Thread_2()
         {
-            for (int i = 0; i < 10000; i++) 
+            for (int i = 0; i < 100000; i++)
             {
-                UserManager.Test();
+                _lock.Acquire();
+                _num--;
+                _lock.Release();
             }
+
         }
         static void Main(string[] args)
         {
@@ -79,13 +80,8 @@ namespace Ifrn_ServerCore
 
             Task.WaitAll(t1, t2);
 
-            Console.WriteLine(number);
+            Console.WriteLine(_num);
         }
     }
 }
 
-// 멀티쓰레드 환경에서 Read 연산은 크게 중요하지 않다.
-// 진짜 문제가 되는 부분 : Write 연산
-// 다른 곳에서 Write하면 그 때부터 Read도 문제가 된다.
-
-// 임계영역 : 쓰레드가 동시에 접근하면 문제되는 코드들.
