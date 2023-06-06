@@ -8,49 +8,76 @@ using System.Threading.Tasks;
 
 namespace Ifrn_ServerCore
 {
-    class SpinLock
+    class Lock
     {
-        volatile int _locked = 0;
+        // Auto Reset Event
+        /*
+        // kernel에서는 bool로 다룸
+        AutoResetEvent _available = new AutoResetEvent(true);  
+        // false = 들어올수없음 true = 들어올수있음
+
+        // Auto = 문을 자동으로 닫아준다.
 
         public void Acquire()
         {
-            int expected = 0;
-            int desired = 1;
-            while (Interlocked.CompareExchange(ref _locked, desired, expected) == desired);
-
-            // 쉬다 올게 ~
-            // Thread.Sleep(1);        // 무조건 휴식 : 1ms만큼 쉴게요
-            // Thread.Sleep(0);        // 조건부 휴식 : 우선순위가 나보다 같거나 높은 쓰레드가 없으면 다시 본인에게
-            Thread.Yield();         // 관대한 양보 : 지금 실행 가능한 쓰레드가 있으면 실행하세요 -> 실행 가능한 애 없으면 다시 본인에게
+            _available.WaitOne();       // 입장 시도
+            //_available.Reset();         // false로 바꿔줌 but WaitOne()에 포함되어 있다.
         }
 
         public void Release() 
         {
-            _locked = 0;
+            _available.Set();           // 이벤트의 상태를 바꾼다 -> _available을 true로 바꿔준다.
+        }
+        */
+
+        // Manual Reset Event
+        ManualResetEvent _available = new ManualResetEvent(false);
+      
+        // Acquire에서 WaitOne()과 Reset()이 두 개로 나뉘어짐 -> Lock에서는 사용할 수 없는 방법
+        // 두 라인을 한 번에 실행해야 함 -> AutoResetEvent로 하자
+
+        // 그럼 언제 하냐?
+        // - 한 번에 하나 씩만 입장해야 할 필요가 없는 경우
+        // - 오래 걸리는 작업이 끝났을 때 모든 쓰레드가 재가동해주는 경우
+
+        public void Acquire()
+        {
+            _available.WaitOne();       // 입장 시도
+            _available.Reset();         // false로 바꿔줌
+        }
+
+        public void Release()
+        {
+            _available.Set();           // 이벤트의 상태를 바꾼다 -> _available을 true로 바꿔준다.
         }
     }
     internal class Program
     {
         static int _num = 0;
-        static SpinLock _lock = new SpinLock();
+        //static Lock _lock = new Lock();
+        static Mutex _lock = new Mutex();
 
         static void Thread_1()
         {
-            for (int i = 0; i < 100000; i++)
+            for (int i = 0; i < 10000; i++)
             {
-                _lock.Acquire();
+                _lock.WaitOne();
+                //_lock.Acquire();
                 _num++;
-                _lock.Release();
+                _lock.ReleaseMutex();
+                //_lock.Release();
             }
         }
 
         static void Thread_2()
         {
-            for (int i = 0; i < 100000; i++)
+            for (int i = 0; i < 10000; i++)
             {
-                _lock.Acquire();
+                _lock.WaitOne();
+                //_lock.Acquire();
                 _num--;
-                _lock.Release();
+                _lock.ReleaseMutex();
+                //_lock.Release();
             }
 
         }
