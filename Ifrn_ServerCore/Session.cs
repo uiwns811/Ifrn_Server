@@ -14,26 +14,25 @@ namespace Ifrn_ServerCore
         Socket _socket;
         int _disconnected = 0;
 
+        // sendArgs 재사용
         object _lock = new object();   
         Queue<byte[]> _sendQueue = new Queue<byte[]>();
-        bool _pending = false;        // 한 번이라도 RegisterSend했으면 true. 작업 완료되면 false.
+        List<ArraySegment<byte>> _pendingList = new List<ArraySegment<byte>>();
         SocketAsyncEventArgs _sendArgs = new SocketAsyncEventArgs();
-
+        SocketAsyncEventArgs _recvArgs = new SocketAsyncEventArgs();
 
         public void Start(Socket socket)
         {
             _socket = socket;
-            SocketAsyncEventArgs recvArgs = new SocketAsyncEventArgs();
-            recvArgs.Completed += new EventHandler<SocketAsyncEventArgs>(OnRecvCompleted);
-            recvArgs.SetBuffer(new byte[1024], 0, 1024);        // 버퍼 0부터 시작하겠다. 버퍼의 사이즈느 1024이다
-                                                                // 경우에 따라 시작 offset이 0이 아닌 경우가 있음
+            _recvArgs.Completed += new EventHandler<SocketAsyncEventArgs>(OnRecvCompleted);
+            _recvArgs.SetBuffer(new byte[1024], 0, 1024);        // 버퍼 0부터 시작하겠다. 버퍼의 사이즈느 1024이다
 
             // recvArgs.UserToken = 1;     // 숫자, this 등 넣어줄 수 있음
 
             _sendArgs.Completed += new EventHandler<SocketAsyncEventArgs>(OnSendCompleted);
 
 
-            RegisterRecv(recvArgs);    
+            RegisterRecv();    
         }
 
         public void Send(byte[] sendBuff)
@@ -41,12 +40,8 @@ namespace Ifrn_ServerCore
             lock (_lock)
             {
                 _sendQueue.Enqueue(sendBuff);
-                if (_pending == false)
+                if (_pendingList.Count == 0)
                     RegisterSend();
-
-                // _pending : 다른 쓰레드가 send를 예약한 상태인지 판별
-                // _pending == false : 아무도 send 안함 -> 내가 함
-                // _pending == true : 누가 RegisterSend했고, 아직 Send가 완료되지 않음 (대기)
             }
         }
 
@@ -64,9 +59,25 @@ namespace Ifrn_ServerCore
         void RegisterSend()
         {
             // Send에서 lock하고 있으니 여기선 별도로 lock 안해줘도 됨
-            _pending = true;
-            byte[] buff = _sendQueue.Dequeue();
-            _sendArgs.SetBuffer(buff, 0, buff.Length);  
+         
+            // 보낼 정보들을 list로 연결된다. -> BufferList로 한 번에 넣자
+            // BufferList != null 인데 SetBuffer 하면 Error!!
+
+            while(_sendQueue.Count > 0)
+            {
+                byte[] buff = _sendQueue.Dequeue();
+                _pendingList.Add(new ArraySegment<byte>(buff, 0, buff.Length));
+                // ArraySegment : Array의 일부. 
+
+                // C++ :  a[10]에서 4번째 원소를 표현하고 싶으면 걍 포인터로 넘겨주면 됨.
+                // C#  : 포인터가 없으므로, 시작 인덱스와 범위를 넣어줘야 한다.
+                // - 그래서 대부분 범위를 표현할 때는 (버퍼, 시작 인덱스, 크기)를 세트로 넘겨줘야 한다.
+                // -
+            }
+            _sendArgs.BufferList = _pendingList;
+            // BufferList.Add 안되고, 미리 만들어놓은 list로 대입만 가능 (문법이 그럼)
+
+            // 현재 _sendArgs.Buffer = null
 
             bool pending = _socket.SendAsync(_sendArgs);
             if (pending == false)
@@ -82,13 +93,13 @@ namespace Ifrn_ServerCore
                 {
                     try
                     {
-                        // 내가 RegisterSend 호출했다고 쳐도, pending == true여서 좀이따 OnSendCompleted가 호출된 경우
-                        // 다른 쓰레드가 Send하면 Enqueue만 함 -> 나중에라도 누가 SendQueue를 해주면 됨
-                        // -> SendQueue 처리
+                        _sendArgs.BufferList = null;
+                        _pendingList.Clear();
+
+                        Console.WriteLine($"Transfferd Bytes : {_sendArgs.BytesTransferred}");
+
                         if (_sendQueue.Count > 0)
                             RegisterSend();
-                        else
-                            _pending = false;
                     }
                     catch (Exception e)
                     {
@@ -102,11 +113,11 @@ namespace Ifrn_ServerCore
             }
         }
 
-        void RegisterRecv(SocketAsyncEventArgs args)
+        void RegisterRecv()
         {
-            bool pending = _socket.ReceiveAsync(args);
+            bool pending = _socket.ReceiveAsync(_recvArgs);
             if (pending == false)
-                OnRecvCompleted(null, args);
+                OnRecvCompleted(null, _recvArgs);
         }
 
         void OnRecvCompleted(object sender, SocketAsyncEventArgs args)
@@ -119,7 +130,7 @@ namespace Ifrn_ServerCore
                     string recvData = Encoding.UTF8.GetString(args.Buffer, args.Offset, args.BytesTransferred);
                     Console.WriteLine($"[From Client] {recvData}");
 
-                    RegisterRecv(args);
+                    RegisterRecv();
                 }
                 catch (Exception ex)
                 {
