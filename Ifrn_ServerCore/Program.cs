@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Net.Http.Headers;
+using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -10,40 +12,51 @@ namespace Ifrn_ServerCore
 {
     internal class Program
     {
-        static ThreadLocal<string> ThreadName = new ThreadLocal<string>(() => { return $"My Name Is {Thread.CurrentThread.ManagedThreadId}"; });  
-        // 전역 : 모든 쓰레드가 공유
-        // ThreadLocal<> : 쓰레드마다 접근하면 자신만의 공간에 저장됨
-        
-        static void WhoAmI()
+        static Listener _listener = new Listener();
+
+        static void OnAcceptHandler(Socket clientSocket)
         {
-            bool repeat = ThreadName.IsValueCreated;
-            if (repeat)
-                Console.WriteLine(ThreadName.Value + "  (repeat)");
-            else
-                Console.WriteLine(ThreadName.Value);
+            try
+            {
+                // 받는다
+                byte[] recvBuff = new byte[1024];
+                int recvBytes = clientSocket.Receive(recvBuff);
+                string recvData = Encoding.UTF8.GetString(recvBuff, 0, recvBytes);
+                Console.WriteLine($"[From Client] {recvData}");
 
-            // 이러면 ThreadName.Value == null일때 (repeat == false일 때)
-            // 생성자에 넣은 람다함수가 호출됨
+                // 보낸다
+                byte[] sendBuff = Encoding.UTF8.GetBytes("Welcome To MMORPG Server !");
+                clientSocket.Send(sendBuff);
 
-            // ThreadLocal은 대부분 static에 넣는다.
-
+                // 쫓아낸다
+                clientSocket.Shutdown(SocketShutdown.Both);     // 더이상 듣기도 싫고 알기도 싫다
+                clientSocket.Close();
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+            }
         }
 
         static void Main(string[] args)
         {
-            ThreadPool.SetMinThreads(1, 1);
-            ThreadPool.SetMaxThreads(3, 3);
-            Parallel.Invoke(WhoAmI, WhoAmI, WhoAmI, WhoAmI, WhoAmI, WhoAmI, WhoAmI);
+            // DNS : Domain Name System
+            // www.sumin.com -> 123.123.123.12 이렇게 해보자
+           
+            string host = Dns.GetHostName();
+            IPHostEntry ipHost = Dns.GetHostEntry(host);
+            IPAddress ipAddr = ipHost.AddressList[0];
+            IPEndPoint endPoint = new IPEndPoint(ipAddr, 7777);
 
-            ThreadName.Dispose();
-            // 필요없을 때 날려준다.
+            _listener.Init(endPoint, OnAcceptHandler);
+            // endPoint는 얘고, 누군가 들어오면 OnAcceptHandler라는 애로 나한테 알려줘
+            
+            Console.WriteLine("Listening ... ");
+
+            while (true)
+            {
+
+            }
         }
     }
 }
-
-// 응용 방법
-// - Job Queue에서 여러 개를 가져와, 자기만의 공간(TLS)에 넣어둔 뒤
-//   Lock을 걸지 않고 하나씩 꺼내서 사용한다.
-
-// 공용 공간 접근 횟수를 줄일 수 있다.
- 
