@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace Ifrn_ServerCore
 {
-    internal class Listener
+    public class Listener
     {
         Socket _listenSocket;
         Func<Session> _sessionFactory;          // 세션을 어떤 방식으로 누구를 만들어 줄 것인지 결정

@@ -11,27 +11,5 @@ using static System.Collections.Specialized.BitVector32;
 
 namespace Ifrn_ServerCore
 {
-    internal class Program
-    {
-        static Listener _listener = new Listener();
-
-        static void Main(string[] args)
-        {
-            string host = Dns.GetHostName();
-            IPHostEntry ipHost = Dns.GetHostEntry(host);
-            IPAddress ipAddr = ipHost.AddressList[0];
-            IPEndPoint endPoint = new IPEndPoint(ipAddr, 7777);
-           
-            _listener.Init(endPoint, () => { return new GameSession(); });
-            // GameSession이 아니라 MMOSession일 수도 있다.
-            // - 어떤 Session을 만들지 결정해주면 안에서 만들어준다.
-             
-            Console.WriteLine("Listening ... ");
-
-            while (true)
-            {
-
-            }
-        }
-    }
+   
 }

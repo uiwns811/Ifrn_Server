@@ -49,5 +49,11 @@
   <ItemGroup>
     <None Include="App.config" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Ifrn_ServerCore\Ifrn_ServerCore.csproj">
+      <Project>{7356a3a5-2955-4df0-948c-549f713e5ee3}</Project>
+      <Name>Ifrn_ServerCore</Name>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

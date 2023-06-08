@@ -11,38 +11,7 @@ using static System.Collections.Specialized.BitVector32;
 
 namespace Ifrn_ServerCore
 {
-    class GameSession : Session
-    {
-        public override void OnConnected(EndPoint endPoint)
-        {
-            Console.WriteLine($"OnConnected : {endPoint}");
-
-            byte[] sendBuff = Encoding.UTF8.GetBytes("Welcome To MMORPG Server !");
-            Send(sendBuff);
-
-            Thread.Sleep(1000);
-
-            Disconnect();
-        }
-
-        public override void OnDisconnected(EndPoint endPoint)
-        {
-            Console.WriteLine($"OnDisconnected : {endPoint}");
-        }
-
-        public override void OnRecv(ArraySegment<byte> buffer)
-        {
-            string recvData = Encoding.UTF8.GetString(buffer.Array, buffer.Offset, buffer.Count);
-            Console.WriteLine($"[From Client] {recvData}");
-        }
-
-        public override void OnSend(int numOfBytes)
-        {
-            Console.WriteLine($"Transfferd Bytes : {numOfBytes}");
-        }
-    }
-
-    internal abstract class Session
+    public abstract class Session
     {
         Socket _socket;
         int _disconnected = 0;
