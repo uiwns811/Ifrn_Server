@@ -9,7 +9,8 @@ using System.Threading;
 using System.Threading.Tasks;
 
 namespace Inflearn_Server
-{    abstract class Packet
+{
+    abstract class Packet
     {
         public ushort size;
         public ushort packetId;
@@ -17,10 +18,11 @@ namespace Inflearn_Server
         public abstract ArraySegment<byte> Write();
         public abstract void Read(ArraySegment<byte> s);
     }
- 
+
     class PlayerInfoReq : Packet
     {
         public long playerId;
+        public string name;
 
         public PlayerInfoReq()
         {
@@ -28,45 +30,63 @@ namespace Inflearn_Server
 
         }
 
-        public override void Read(ArraySegment<byte> s)
+        public override void Read(ArraySegment<byte> segment)
         {
-            // 역직렬화 : 버퍼에 있는거 꺼내쓰기
             ushort count = 0;
-            //ushort size = BitConverter.ToUInt16(s.Array, s.Offset);
-            count += 2;
-            // ushort id = BitConverter.ToUInt16(s.Array, s.Offset + count);
-            count += 2;
-            // count가 버퍼의 크기를 벗어나진 않았는지 지속적으로 체크해줘야 함 
 
-            this.playerId = BitConverter.ToUInt16(new ReadOnlySpan<byte>(s.Array, s.Offset + count, s.Count - count));
-            // this.playerId = BitConverter.ToUInt16(s.Array, s.Offset + count);       // 충분한 공간이 있는지 체크 필요
-            // - 범위를 정해서 넣어줄 수 있는 위 버전 (ReadOnlySpan)이 훨씬 안전하다.
-            count += 8;
+            ReadOnlySpan<byte> s = new ReadOnlySpan<byte>(segment.Array, segment.Offset, segment.Count);
+
+            count += sizeof(ushort);            // size
+            count += sizeof(ushort);            // packetid
+            this.playerId = BitConverter.ToUInt16(s.Slice(count, s.Length - count));
+            count += sizeof(long);
+
+            // string
+            ushort nameLen = BitConverter.ToUInt16(s.Slice(count, s.Length - count));
+            count += sizeof(ushort);
+
+            this.name = Encoding.Unicode.GetString(s.Slice(count, nameLen));        // GetString : Byte -> string
         }
 
         public override ArraySegment<byte> Write()
         {
-            ArraySegment<byte> s = SendBufferHelper.Open(4096);
+            ArraySegment<byte> segment = SendBufferHelper.Open(4096);
 
             ushort count = 0;
             bool success = true;
 
-            // - success와 & 연산을 통해 TryWriteBytes가 한 번이라도 실패하면 success = false;
-            // - 실패하는 경우 : s가 2byte짜린데 우리가 8byte packet을 넣어준 경우 등 .. 
-            count += 2;
-            success &= BitConverter.TryWriteBytes(new Span<byte>(s.Array, s.Offset + count, s.Count - count), this.packetId);
-            count += 2;
-            success &= BitConverter.TryWriteBytes(new Span<byte>(s.Array, s.Offset + count, s.Count - count), this.playerId);
-            count += 8;
+            Span<byte> s = new Span<byte>(segment.Array, segment.Offset, segment.Count);
 
-            success &= BitConverter.TryWriteBytes(new Span<byte>(s.Array, s.Offset, s.Count), count);
-            // 실제 count하기 전에는 packet.size를 알 수 없음. 그래서 패킷을 다 채우고 난 뒤에 맨 앞에다가 count만큼 넣어주자
+            count += sizeof(ushort);
+            success &= BitConverter.TryWriteBytes(s.Slice(count, s.Length - count), this.packetId);
+            count += sizeof(ushort);
+            success &= BitConverter.TryWriteBytes(s.Slice(count, s.Length - count), this.playerId);
+            count += sizeof(long);
+
+            // s.Slice : count부터 s.Length - count만큼 잘라줌. but s가 변하는 것은 아님. 결과를 새로 return해줌
+
+            // string len[2]
+            // byte []
+            // string의 길이를 보내면 모르니까 2byte짜리 string.length를 보내고, 그 다음 그 길이의 string을 보내자
+            // (고정길이 가변길이)
+
+            // name의 길이 보내주기
+            ushort nameLen = (ushort)Encoding.Unicode.GetByteCount(this.name);       // Byte배열로 변환됐을 때의 길이
+            success &= BitConverter.TryWriteBytes(s.Slice(count, s.Length - count), nameLen);
+            count += sizeof(ushort);
+
+            // 실제 name 데이터 보내주기
+            Array.Copy(Encoding.Unicode.GetBytes(this.name), 0, segment.Array, count, nameLen);       // string을 Byte 배열로 변환
+            // GetBytes한 것을, segment의 count부터 nameLen만큼에다 복사하자
+            count += nameLen;
+
+            // 최종 count
+            success &= BitConverter.TryWriteBytes(s, count);
 
             if (success == false)
                 return null;
 
             return SendBufferHelper.Close(count);
-
         }
     }
 
@@ -108,7 +128,7 @@ namespace Inflearn_Server
                     {
                         PlayerInfoReq p = new PlayerInfoReq();
                         p.Read(buffer);
-                        Console.WriteLine($"PlayerInfoReq ID : {p.playerId}");
+                        Console.WriteLine($"PlayerInfoReq ID : {p.playerId}, playerName : {p.name}");
                     }
                     break;
                 case PacketID.PlayerInfoOK:
