@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Inflearn_ServerCore;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
@@ -10,8 +11,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using static System.Collections.Specialized.BitVector32;
 
-namespace Ifrn_ServerCore
+namespace Inflearn_ServerCore
 {
+    // 직렬화 (Serialization) : 메모리 상에 Instance로 존재하는 객체를 납작하게 만들어서 버퍼 안에 집어넣기 !!
+    // 역직렬화 (Deserialization) : byte 배열에 있는 객체를 꺼내서 쓰기 !! 
     public abstract class PacketSession : Session
     {
         public static readonly int HeaderSize = 2;
@@ -20,7 +23,7 @@ namespace Ifrn_ServerCore
         public sealed override int OnRecv(ArraySegment<byte> buffer)
         {
             int processLen = 0;
-            while(true)
+            while (true)
             {
                 // 최소한 헤더는 파싱할 수 있는지 확인
                 if (buffer.Count < HeaderSize) break;
@@ -51,7 +54,7 @@ namespace Ifrn_ServerCore
         RecvBuffer _recvBuffer = new RecvBuffer(1024);
         // session마다 고유 recvbuffer를 갖는다.
 
-        object _lock = new object();   
+        object _lock = new object();
         Queue<ArraySegment<byte>> _sendQueue = new Queue<ArraySegment<byte>>();
         List<ArraySegment<byte>> _pendingList = new List<ArraySegment<byte>>();
         SocketAsyncEventArgs _sendArgs = new SocketAsyncEventArgs();
@@ -68,7 +71,7 @@ namespace Ifrn_ServerCore
             _recvArgs.Completed += new EventHandler<SocketAsyncEventArgs>(OnRecvCompleted);
             _sendArgs.Completed += new EventHandler<SocketAsyncEventArgs>(OnSendCompleted);
 
-            RegisterRecv();    
+            RegisterRecv();
         }
 
         public void Send(ArraySegment<byte> sendBuff)
@@ -96,13 +99,13 @@ namespace Ifrn_ServerCore
 
         void RegisterSend()
         {
-            while(_sendQueue.Count > 0)
+            while (_sendQueue.Count > 0)
             {
                 ArraySegment<byte> buff = _sendQueue.Dequeue();
                 _pendingList.Add(buff);
-               }
-            _sendArgs.BufferList = _pendingList; 
-         
+            }
+            _sendArgs.BufferList = _pendingList;
+
             bool pending = _socket.SendAsync(_sendArgs);
             if (pending == false)
                 OnSendCompleted(null, _sendArgs);
@@ -159,7 +162,7 @@ namespace Ifrn_ServerCore
                         Disconnect();
                         return;
                     }
-                        
+
                     // 컨텐츠 쪽으로 데이터를 넘겨주고 얼마나 처리했는지 받는다
                     int processLen = OnRecv(_recvBuffer.ReadSegment);       // 데이터를 얼마나 처리했니
                     if (processLen < 0 || _recvBuffer.DataSize < processLen)
