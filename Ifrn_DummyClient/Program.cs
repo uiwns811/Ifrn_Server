@@ -9,21 +9,31 @@ using System.Threading;
 using System.Threading.Tasks;
 
 namespace Ifrn_DummyClient
-{
+{   
+    class Packet
+    {
+        public ushort size;
+        public ushort packetId;
+    }
+
     class GameSession : Session
     {
         public override void OnConnected(EndPoint endPoint)
         {
             Console.WriteLine($"OnConnected : {endPoint}");
 
+            Packet packet = new Packet() { size = 4, packetId = 7 };
+
             for (int i = 0; i < 5; i++)
             {
-                byte[] message = Encoding.UTF8.GetBytes($"Hello World! {i}");
-
                 ArraySegment<byte> openSegment = SendBufferHelper.Open(4096);
 
-                Array.Copy(message, 0, openSegment.Array, openSegment.Offset, message.Length);
-                ArraySegment<byte> sendBuff = SendBufferHelper.Close(message.Length);
+                byte[] buffer1 = BitConverter.GetBytes(packet.size);       // int형의 값을 byte 배열로 바꿔줌
+                byte[] buffer2 = BitConverter.GetBytes(packet.packetId);       // int형의 값을 byte 배열로 바꿔줌
+
+                Array.Copy(buffer1, 0, openSegment.Array, openSegment.Offset, buffer1.Length);
+                Array.Copy(buffer2, 0, openSegment.Array, openSegment.Offset + buffer1.Length, buffer2.Length);
+                ArraySegment<byte> sendBuff = SendBufferHelper.Close(packet.size    );
 
                 Send(sendBuff);
             }

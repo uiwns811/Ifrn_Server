@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -11,6 +12,37 @@ using static System.Collections.Specialized.BitVector32;
 
 namespace Ifrn_ServerCore
 {
+    public abstract class PacketSession : Session
+    {
+        public static readonly int HeaderSize = 2;
+        // [size(2)][packetId(2)][ ... ][size(2)][packetId(2)][ ... ]
+        // sealed : PacketSession을 상속받은 클래스가 OnRecv 오버라이드 불가능
+        public sealed override int OnRecv(ArraySegment<byte> buffer)
+        {
+            int processLen = 0;
+            while(true)
+            {
+                // 최소한 헤더는 파싱할 수 있는지 확인
+                if (buffer.Count < HeaderSize) break;
+
+                // 패킷이 완전체로 도착했는지 확인
+                ushort dataSize = BitConverter.ToUInt16(buffer.Array, buffer.Offset);     // ushort만큼을 뱉어줌
+                if (buffer.Count < dataSize) break;
+
+                // 패킷 조립
+                OnRecvPacket(new ArraySegment<byte>(buffer.Array, buffer.Offset, dataSize));
+                // ArraySegment는 struct라서 새로 할당하는게 아니고 걍 stack에 복사하는 개념임 
+                // buffer.Slice() 도 가능
+
+                processLen += dataSize;
+                buffer = new ArraySegment<byte>(buffer.Array, buffer.Offset + dataSize, buffer.Count - dataSize);
+            }
+            return 0;
+        }
+
+        public abstract void OnRecvPacket(ArraySegment<byte> buffer);
+    }
+
     public abstract class Session
     {
         Socket _socket;
