@@ -17,9 +17,10 @@ namespace Ifrn_ServerCore
         int _disconnected = 0;
 
         RecvBuffer _recvBuffer = new RecvBuffer(1024);
+        // session마다 고유 recvbuffer를 갖는다.
 
         object _lock = new object();   
-        Queue<byte[]> _sendQueue = new Queue<byte[]>();
+        Queue<ArraySegment<byte>> _sendQueue = new Queue<ArraySegment<byte>>();
         List<ArraySegment<byte>> _pendingList = new List<ArraySegment<byte>>();
         SocketAsyncEventArgs _sendArgs = new SocketAsyncEventArgs();
         SocketAsyncEventArgs _recvArgs = new SocketAsyncEventArgs();
@@ -38,7 +39,7 @@ namespace Ifrn_ServerCore
             RegisterRecv();    
         }
 
-        public void Send(byte[] sendBuff)
+        public void Send(ArraySegment<byte> sendBuff)
         {
             lock (_lock)
             {
@@ -65,10 +66,10 @@ namespace Ifrn_ServerCore
         {
             while(_sendQueue.Count > 0)
             {
-                byte[] buff = _sendQueue.Dequeue();
-                _pendingList.Add(new ArraySegment<byte>(buff, 0, buff.Length));
+                ArraySegment<byte> buff = _sendQueue.Dequeue();
+                _pendingList.Add(buff);
                }
-            _sendArgs.BufferList = _pendingList;
+            _sendArgs.BufferList = _pendingList; 
          
             bool pending = _socket.SendAsync(_sendArgs);
             if (pending == false)
@@ -128,7 +129,20 @@ namespace Ifrn_ServerCore
                     }
                         
                     // 컨텐츠 쪽으로 데이터를 넘겨주고 얼마나 처리했는지 받는다
-                    OnRecv(_recvBuffer.ReadSegment);
+                    int processLen = OnRecv(_recvBuffer.ReadSegment);       // 데이터를 얼마나 처리했니
+                    if (processLen < 0 || _recvBuffer.DataSize < processLen)
+                    {
+                        Disconnect();
+                        return;
+                    }
+
+                    // Read 커서 이동
+                    if (_recvBuffer.OnRead(args.BytesTransferred) == false)
+                    {
+                        Disconnect();
+                        return;
+                    }
+
                     RegisterRecv();
                 }
                 catch (Exception ex)

@@ -18,7 +18,13 @@ namespace Ifrn_DummyClient
 
             for (int i = 0; i < 5; i++)
             {
-                byte[] sendBuff = Encoding.UTF8.GetBytes($"Hello World! {i}");
+                byte[] message = Encoding.UTF8.GetBytes($"Hello World! {i}");
+
+                ArraySegment<byte> openSegment = SendBufferHelper.Open(4096);
+
+                Array.Copy(message, 0, openSegment.Array, openSegment.Offset, message.Length);
+                ArraySegment<byte> sendBuff = SendBufferHelper.Close(message.Length);
+
                 Send(sendBuff);
             }
         }

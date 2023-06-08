@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Ifrn_ServerCore
 {
-    internal class RecvBuffer
+    public class RecvBuffer
     {
         // [r][][][][w][][][][][]
         ArraySegment<byte> _buffer;
