@@ -8,6 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using static System.Collections.Specialized.BitVector32;
 using ServerCore;
+using Microsoft.Win32;
 
 namespace Server
 {
@@ -18,6 +19,8 @@ namespace Server
 
         static void Main(string[] args)
         {
+            PacketManager.Instance.Register();
+
             string host = Dns.GetHostName();
             IPHostEntry ipHost = Dns.GetHostEntry(host);
             IPAddress ipAddr = ipHost.AddressList[0];
