@@ -1,4 +1,4 @@
-﻿using Inflearn_ServerCore;
+﻿using ServerCore;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -11,7 +11,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using static System.Collections.Specialized.BitVector32;
 
-namespace Inflearn_ServerCore
+namespace ServerCore
 {
     // 직렬화 (Serialization) : 메모리 상에 Instance로 존재하는 객체를 납작하게 만들어서 버퍼 안에 집어넣기 !!
     // 역직렬화 (Deserialization) : byte 배열에 있는 객체를 꺼내서 쓰기 !! 

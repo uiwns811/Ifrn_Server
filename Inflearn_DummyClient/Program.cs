@@ -1,4 +1,4 @@
-﻿using Inflearn_ServerCore;
+﻿using ServerCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,7 +8,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Inflearn_DummyClient
+namespace DummyClient
 {
     internal class Program
     {

@@ -7,9 +7,9 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using static System.Collections.Specialized.BitVector32;
-using Inflearn_ServerCore;
+using ServerCore;
 
-namespace Inflearn_Server
+namespace Server
 {
    
     internal class Program
