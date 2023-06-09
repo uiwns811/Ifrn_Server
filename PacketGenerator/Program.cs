@@ -2,19 +2,31 @@
 using System;
 using System.Xml;
 
+// batchfile : 윈도우에서 제공해주는 명령어들을 작성해서 한 번에 실행하도록 해주는 개념 
+// PacketGenerator의 프로젝트 폴더 내 exe 를 클릭해주는 작업
+
+
 namespace PacketgGenerator
 {
     class Program
     {
         static string getPacket;
+        static ushort packetid;
+        static string packetEnums;
+
         static void Main(string[] args) 
         {
+            string pdlPath = "../PDL.xml";
             XmlReaderSettings settings = new XmlReaderSettings()
             {
                 IgnoreComments = true,
                 IgnoreWhitespace = true,
             };
-            using (XmlReader r = XmlReader.Create("PDL.xml", settings))
+
+            if (args.Length >= 1)
+                pdlPath = args[0];
+
+            using (XmlReader r = XmlReader.Create(pdlPath, settings))
             {
                 r.MoveToContent();
                 // xml에서 헤더 건너뛰고 컨텐츠 (정의한 부분)으로 바로 감
@@ -29,7 +41,8 @@ namespace PacketgGenerator
                     Console.WriteLine(r.Name + " " + r["name"]);
                 }
 
-                File.WriteAllText("GenPackets.cs", getPacket);
+                string fileText = string.Format(PacketFormat.fileFormat, packetEnums, getPacket);
+                File.WriteAllText("GenPackets.cs", fileText);
             }
             // using 범위 벗어나면 자동으로 Dispose 해줌
         }
@@ -52,7 +65,9 @@ namespace PacketgGenerator
             }
 
             Tuple<string, string, string> t = ParseMembers(r);
-            getPacket += string.Format(PacketFormat.packetFormat, packetName, t.Item1, t.Item2, t.Item3);
+            getPacket += string.Format(PacketFormat.packetFormat, packetName, t.Item1, t.Item2, t.Item3) + Environment.NewLine;
+            packetEnums += string.Format(PacketFormat.packetEnumFormat, packetName, ++packetid)
+                + Environment.NewLine + "\t";      // 엔터 후 tab
         }
 
         // {0} : 패킷 이름
@@ -92,8 +107,13 @@ namespace PacketgGenerator
                 string memberType = r.Name.ToLower();
                 switch(memberType)
                 {
-                    case "bool":
                     case "byte":
+                    case "sbyte":
+                        memberCode += string.Format(PacketFormat.memberFormat, memberType, memberName);
+                        readCode += string.Format(PacketFormat.readByteFormat, memberName, memberType);
+                        writeCode += string.Format(PacketFormat.writeByteFormat, memberName, memberType);
+                        break;
+                    case "bool":
                     case "short":
                     case "ushort":
                     case "int":
