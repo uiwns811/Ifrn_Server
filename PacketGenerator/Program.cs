@@ -14,6 +14,9 @@ namespace PacketgGenerator
         static ushort packetid;
         static string packetEnums;
 
+        static string serverRegister;
+        static string clientRegister;
+
         static void Main(string[] args) 
         {
             string pdlPath = "../PDL.xml";
@@ -43,10 +46,16 @@ namespace PacketgGenerator
 
                 string fileText = string.Format(PacketFormat.fileFormat, packetEnums, getPacket);
                 File.WriteAllText("GenPackets.cs", fileText);
+
+                string clientManagerText = string.Format(PacketFormat.managerFormat, clientRegister);
+                File.WriteAllText("ClientPacketManager.cs", clientManagerText);
+                string serverManagerText = string.Format(PacketFormat.managerFormat, serverRegister);
+                File.WriteAllText("ServerPacketManager.cs", serverManagerText);
             }
             // using 범위 벗어나면 자동으로 Dispose 해줌
         }
 
+        // 패킷 단위 파싱
         public static void ParsePacket(XmlReader r)
         {
             if (r.NodeType == XmlNodeType.EndElement)
@@ -68,6 +77,11 @@ namespace PacketgGenerator
             getPacket += string.Format(PacketFormat.packetFormat, packetName, t.Item1, t.Item2, t.Item3) + Environment.NewLine;
             packetEnums += string.Format(PacketFormat.packetEnumFormat, packetName, ++packetid)
                 + Environment.NewLine + "\t";      // 엔터 후 tab
+
+            if (packetName.StartsWith("S_") || packetName.StartsWith("s_"))
+                clientRegister += string.Format(PacketFormat.managerRegisterFormat, packetName) + Environment.NewLine;
+            else
+                serverRegister += string.Format(PacketFormat.managerRegisterFormat, packetName) + Environment.NewLine;
         }
 
         // {0} : 패킷 이름

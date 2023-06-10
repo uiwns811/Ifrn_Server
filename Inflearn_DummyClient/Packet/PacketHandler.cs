@@ -14,13 +14,11 @@ internal class PacketHandler
     // packet : 어떤 패킷이냐
     // 함수 이름 : 패킷이름 + Handler
 
-    public static void C_PlayerInfoReqHandler(PacketSession session, IPacket packet)
+    public static void S_TestHandler(PacketSession session, IPacket packet)
     {
-        C_PlayerInfoReq p = packet as C_PlayerInfoReq;
+        S_Test p = packet as S_Test;
 
-        Console.WriteLine($"PlayerInfoReq ID : {p.playerId}, playerName : {p.name}");
+        Console.WriteLine($"Test");
 
-        foreach (C_PlayerInfoReq.Skill skill in p.skills)
-            Console.WriteLine($"Skill({skill.id}, {skill.level}, {skill.duration})");
     }
 }

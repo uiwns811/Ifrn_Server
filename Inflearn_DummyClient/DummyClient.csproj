@@ -9,6 +9,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Packet\PacketManager.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\Inflearn_ServerCore\ServerCore.csproj" />
   </ItemGroup>
 
