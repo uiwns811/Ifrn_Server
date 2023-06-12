@@ -21,6 +21,6 @@ internal class PacketHandler
         ServerSession serverSession = session as ServerSession;
 
         //if (p.playerId == 1)
-            Console.WriteLine(p.chat);
+        //    Console.WriteLine(p.chat);
     }
 }

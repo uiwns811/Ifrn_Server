@@ -18,7 +18,7 @@ namespace Server.Session
         {
             Console.WriteLine($"OnConnected : {endPoint}");
 
-            Program.Room.Enter(this);
+            Program.Room.Push(() => { Program.Room.Enter(this); });
         }
 
         public override void OnDisconnected(EndPoint endPoint)
@@ -26,7 +26,8 @@ namespace Server.Session
             SessionManager.Instance.Remove(this);
             if (Room != null)
             {
-                Room.Leave(this);
+                GameRoom room = Room;
+                room.Push(()=> room.Leave(this));
                 Room = null;
             }
 
@@ -41,7 +42,7 @@ namespace Server.Session
 
         public override void OnSend(int numOfBytes)
         {
-            Console.WriteLine($"Transfferd Bytes : {numOfBytes}");
+            //Console.WriteLine($"Transfferd Bytes : {numOfBytes}");
         }
     }
 

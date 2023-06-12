@@ -18,11 +18,11 @@ namespace ServerCore
     public abstract class PacketSession : Session
     {
         public static readonly int HeaderSize = 2;
-        // [size(2)][packetId(2)][ ... ][size(2)][packetId(2)][ ... ]
-        // sealed : PacketSession을 상속받은 클래스가 OnRecv 오버라이드 불가능
         public sealed override int OnRecv(ArraySegment<byte> buffer)
         {
             int processLen = 0;
+            int packetCount = 0;
+
             while (true)
             {
                 // 최소한 헤더는 파싱할 수 있는지 확인
@@ -34,13 +34,15 @@ namespace ServerCore
 
                 // 패킷 조립
                 OnRecvPacket(new ArraySegment<byte>(buffer.Array, buffer.Offset, dataSize));
-                // ArraySegment는 struct라서 새로 할당하는게 아니고 걍 stack에 복사하는 개념임 
-                // buffer.Slice() 도 가능
+                packetCount++;
 
                 processLen += dataSize;
                 buffer = new ArraySegment<byte>(buffer.Array, buffer.Offset + dataSize, buffer.Count - dataSize);
             }
-            return 0;
+            if (packetCount > 1)
+                Console.WriteLine($"패킷 모아 보내기 : {packetCount}");
+
+            return processLen;
         }
 
         public abstract void OnRecvPacket(ArraySegment<byte> buffer);
@@ -51,7 +53,7 @@ namespace ServerCore
         Socket _socket;
         int _disconnected = 0;
 
-        RecvBuffer _recvBuffer = new RecvBuffer(1024);
+        RecvBuffer _recvBuffer = new RecvBuffer(65535);
         // session마다 고유 recvbuffer를 갖는다.
 
         object _lock = new object();
@@ -88,6 +90,21 @@ namespace ServerCore
             lock (_lock)
             {
                 _sendQueue.Enqueue(sendBuff);
+                if (_pendingList.Count == 0)
+                    RegisterSend();
+            }
+        }
+
+        public void Send(List<ArraySegment<byte>> sendBuffList)
+        {
+            if (sendBuffList.Count == 0)
+                return;
+
+            lock (_lock)
+            {
+                foreach (ArraySegment<byte> sendBuff in sendBuffList)   
+                    _sendQueue.Enqueue(sendBuff);
+
                 if (_pendingList.Count == 0)
                     RegisterSend();
             }
