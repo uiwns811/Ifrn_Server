@@ -10,6 +10,7 @@ using static System.Collections.Specialized.BitVector32;
 using ServerCore;
 using Microsoft.Win32;
 using Server.Session;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Server
 {
@@ -17,6 +18,13 @@ namespace Server
     {
         static Listener _listener = new Listener();
         public static GameRoom Room = new GameRoom();
+
+        static void FlushRoom()
+        {
+            Room.Push(() => Room.Flush());
+
+            JobTimer.Instance.Push(FlushRoom, 250);
+        }
 
         static void Main(string[] args)
         {
@@ -31,11 +39,11 @@ namespace Server
 
             Console.WriteLine("Listening ... ");
 
-            while (true)
-            {
-                Room.Push(() => Room.Flush());
-                Thread.Sleep(250);
+            JobTimer.Instance.Push(FlushRoom);
 
+            while (true)
+            { 
+                JobTimer.Instance.Flush();
             }
         }
     }
