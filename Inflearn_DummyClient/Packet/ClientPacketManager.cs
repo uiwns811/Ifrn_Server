@@ -4,18 +4,15 @@ using System.Collections.Generic;
 
 class PacketManager
 {
-    #region Singleton
-    static PacketManager _instance;
-    public static PacketManager Instance
-    {
-        get
-        {
-            if (_instance == null)
-                _instance = new PacketManager();
-            return _instance;
-        }
-    }
+   #region Singleton
+    static PacketManager _instance = new PacketManager();
+    public static PacketManager Instance { get { return _instance; } }
     #endregion
+
+    PacketManager()
+    {
+        Register();
+    }
 
     // ushort : packetId
     // action : 할 행동
@@ -24,9 +21,9 @@ class PacketManager
 
     public void Register()
     {
-        _onRecv.Add((ushort)PacketID.S_Test, MakePacket<S_Test>);
-_handler.Add((ushort)PacketID.S_Test, PacketHandler.S_TestHandler);
-;
+      _onRecv.Add((ushort)PacketID.S_Chat, MakePacket<S_Chat>);
+        _handler.Add((ushort)PacketID.S_Chat, PacketHandler.S_ChatHandler);
+
 
     }
 

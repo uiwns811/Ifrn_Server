@@ -1,4 +1,5 @@
-﻿using ServerCore;
+﻿using DummyClient;
+using ServerCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,11 +15,12 @@ internal class PacketHandler
     // packet : 어떤 패킷이냐
     // 함수 이름 : 패킷이름 + Handler
 
-    public static void S_TestHandler(PacketSession session, IPacket packet)
+    public static void S_ChatHandler(PacketSession session, IPacket packet)
     {
-        S_Test p = packet as S_Test;
+        S_Chat p = packet as S_Chat;
+        ServerSession serverSession = session as ServerSession;
 
-        Console.WriteLine($"Test");
-
+        //if (p.playerId == 1)
+            Console.WriteLine(p.chat);
     }
 }
