@@ -17,7 +17,7 @@ namespace ServerCore
         public static ThreadLocal<SendBuffer> CurrentBuffer = new ThreadLocal<SendBuffer>(()=> { return null; });
 
         // 쓰레드마다 Chunk가 있고, 이를 할당해서 쓴다.
-        public static int ChunkSize { get; set; } = 65535 * 100;
+        public static int ChunkSize { get; set; } = 65535;
 
         public static ArraySegment<byte> Open(int reserveSize)
         {
